@@ -17,7 +17,7 @@ async function main() {
     {
       role: "system",
       content:
-        "You are a coding assistant. For questions about local project files, use the provided tool instead of guessing.",
+        "You are a coding assistant. Use the fewest tool calls needed for local project facts. For a project overview, read package.json, then the CLI entrypoint named by its ask script; inspect the tool registry only if needed. Those files are usually enough for a useful overview, so answer once you have read them. Do not read every file or inspect generated/vendor folders such as node_modules. State what you did not inspect instead of continuing to browse.",
     },
     {
       role: "user",
@@ -31,7 +31,9 @@ async function main() {
   }));
 
   const MAX_TURNS = 10;
+  const MAX_TOOL_CALLS = 6;
   let turn = 0;
+  let toolCallCount = 0;
 
   while (turn < MAX_TURNS) {
     turn += 1;
@@ -42,7 +44,7 @@ async function main() {
       reasoning_effort: "none",
       messages,
       tools,
-      tool_choice: "auto",
+      tool_choice: toolCallCount >= MAX_TOOL_CALLS ? "none" : "auto",
       parallel_tool_calls: false,
     });
 
@@ -70,6 +72,7 @@ async function main() {
 
       console.log("\nTool name:", toolCall.function.name);
       console.log("Raw arguments:", toolCall.function.arguments);
+      toolCallCount += 1;
 
       let toolResult: string;
 
