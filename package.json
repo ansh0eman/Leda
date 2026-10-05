@@ -4,9 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx src/main.ts",
-    "ask": "node --env-file=.env --import tsx src/request-tool-call.ts",
-    "build": "tsc --noEmit"
+    "dev": "node --env-file=.env --import tsx src/cli.ts",
+    "ask": "node --env-file=.env --import tsx src/cli.ts"
   },
   "dependencies": {
     "dotenv": "^18.0.5",
