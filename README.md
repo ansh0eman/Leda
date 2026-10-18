@@ -8,17 +8,17 @@ Leda is an early-stage, terminal-native agentic coding assistant written in Type
 - Exposes registered tools to the OpenAI model using JSON Schema generated from Zod schemas.
 - Validates tool arguments at runtime in a central runner, then executes the selected tool.
 - Repeats the LLM → tool → observation cycle until the model answers or a limit is reached.
-- Provides `read_file` and `list_files`, with basic path and filename restrictions.
+- Provides `read_file`, `list_files`, and `search_files`, with basic path and filename restrictions.
 - Allows at most 10 model turns and 6 tool calls per request. Tool calls are sequential.
 
 ## How it works
 
 ```text
-User prompt
+CLI prompt
     ↓
-Agent loop
+Agent orchestrator (history and limits)
     ↓
-LLM
+Model adapter → OpenAI
     ↓
 Tool call?
     ├─ no → final answer
@@ -35,7 +35,9 @@ Tool call?
     tool result → back to LLM
 ```
 
-The registry supplies the tool name, description, and input schema to the model. The model requests a tool; local TypeScript code validates its arguments, runs it, and returns its result as a tool message. The loop keeps the conversation history so the model can use each observation in its next decision.
+`src/cli.ts` reads the prompt and configuration, creates the OpenAI adapter and tool executor, and prints progress. `src/agent/orchestrator.ts` owns the conversation history, tool execution, counters, and final state. `src/model/model.ts` defines provider-neutral messages, tool calls, and the `ModelAdapter` interface; `src/model/openai-adapter.ts` maps those to and from the OpenAI SDK. The registry supplies tool definitions, while `callTool` validates arguments with Zod and returns a typed outcome.
+
+The orchestrator runs requested tools sequentially and appends a result for every requested call ID. Malformed JSON, unknown tools, validation failures, and execution failures become distinct tool observations. It returns `completed`, `stopped`, or `error`; a limit stop is never reported as an answer. Requested calls beyond the six-call limit are paired with a “not executed” result. API errors retain HTTP status, code, and type when available.
 
 ## Current tools
 
@@ -43,6 +45,7 @@ The registry supplies the tool name, description, and input schema to the model.
 | --- | --- | --- |
 | `read_file` | Implemented | Reads a project text file after basic path and filename checks. |
 | `list_files` | Implemented | Lists direct entries in a project directory, filtering selected sensitive names. |
+| `search_files` | Implemented | Recursively searches project text files and returns up to 50 matching lines. |
 
 ## Roadmap
 
@@ -52,7 +55,7 @@ Checked items exist in the current codebase; unchecked items are plans, not avai
 
 - [x] `read_file`
 - [x] `list_files`
-- [ ] `search_files`
+- [x] `search_files`
 - [ ] `file_exists`
 - [ ] `write_file`
 - [ ] `move_file`
@@ -103,6 +106,8 @@ Create a local `.env` file containing your OpenAI API key:
 
 ```dotenv
 OPENAI_API_KEY=your_key_here
+# Optional; defaults to gpt-6-luna
+OPENAI_MODEL=gpt-6-luna
 ```
 
 Run the CLI:
@@ -111,13 +116,15 @@ Run the CLI:
 npm run ask -- "What does package.json contain?"
 ```
 
-Type-check the project:
+Check, test, and build:
 
 ```sh
+npm run typecheck
+npm test
 npm run build
 ```
 
-Do not commit `.env`. The `ask` script is the working entrypoint. The `dev` script currently runs `src/main.ts`, which is only a placeholder and does not launch the agent.
+`npm run dev -- "Your question"` uses the same CLI entrypoint as `ask`. The build emits JavaScript in `dist/`. Do not commit `.env` or `dist/`. Tests use a fake model and make no API calls.
 
 ## Safety
 
