@@ -1,11 +1,17 @@
 import { readFile, readdir } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 import { z } from "zod";
 import { getSafeProjectPath, isSensitiveFileName } from "./file-safety.js";
 import type { Tool } from "./tool.js";
 
-const ignoredDirectoryNames = [".git", "node_modules", "dist", "build"];
+const ignoredDirectoryNames = new Set([".git", ".venv", "node_modules", "dist", "build"]);
 const MAX_RESULTS = 50;
+
+function containsIgnoredDirectory(directoryPath: string): boolean {
+  return relative(process.cwd(), directoryPath)
+    .split(sep)
+    .some((directoryName) => ignoredDirectoryNames.has(directoryName));
+}
 
 const searchFilesInputSchema = z.object({
   directoryPath: z.string(),
@@ -24,7 +30,7 @@ async function searchDirectory(
       return;
     }
 
-    if (ignoredDirectoryNames.includes(entry.name) || isSensitiveFileName(entry.name)) {
+    if (ignoredDirectoryNames.has(entry.name) || isSensitiveFileName(entry.name)) {
       continue;
     }
 
@@ -70,7 +76,7 @@ export const searchFilesTool: Tool<typeof searchFilesInputSchema> = {
   async execute(args): Promise<string> {
     const safePath = getSafeProjectPath(args.directoryPath);
 
-    if (!safePath) {
+    if (!safePath || containsIgnoredDirectory(safePath)) {
       throw new Error("This directory cannot be searched.");
     }
 
