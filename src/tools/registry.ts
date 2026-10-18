@@ -5,6 +5,7 @@ import { gitStatusTool } from "./git-status.js";
 import { gitDiffTool } from "./git-diff.js";
 import { gitLogTool } from "./git-log.js";
 import { gitBranchTool } from "./git-branch.js";
+import { editFileTool } from "./edit-file.js";
 
 export const ToolsRegistry = {
   read_file: readFileTool,
@@ -14,6 +15,7 @@ export const ToolsRegistry = {
   git_diff: gitDiffTool,
   git_log: gitLogTool,
   git_branch: gitBranchTool,
+  edit_file: editFileTool,
 };
 
 export type ToolName = keyof typeof ToolsRegistry;

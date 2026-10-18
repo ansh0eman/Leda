@@ -6,7 +6,7 @@ export const MAX_TURNS = 10;
 export const MAX_TOOL_CALLS = 6;
 
 export const SYSTEM_PROMPT =
-  "You are a coding assistant. Use the fewest tool calls needed for local project facts. For a project overview, read package.json, then the CLI entrypoint named by its ask script; inspect the tool registry only if needed. Those files are usually enough for a useful overview, so answer once you have read them. Do not read every file or inspect generated/vendor folders such as node_modules. State what you did not inspect instead of continuing to browse.";
+  "You are a coding assistant. Use the fewest tool calls needed for local project facts. For a project overview, read package.json, then the CLI entrypoint named by its ask script; inspect the tool registry only if needed. Those files are usually enough for a useful overview, so answer once you have read them. Do not read every file or inspect generated/vendor folders such as node_modules. State what you did not inspect instead of continuing to browse. For requested edits, read the target and use edit_file for one exact replacement. Wait for the CLI approval result, then use git_diff to inspect the change. Never claim an edit succeeded unless edit_file confirms it.";
 
 export type AgentEvent =
   | { type: "turn"; turn: number }

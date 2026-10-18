@@ -1,6 +1,6 @@
 # Leda
 
-Leda is an early-stage, terminal-native agentic coding assistant written in TypeScript. It uses LLM-selected, read-only tools to inspect a local project and answer questions about it.
+Leda is an early-stage, terminal-native agentic coding assistant written in TypeScript. It uses model-selected tools to inspect a local project and can make a single-file text replacement after explicit approval.
 
 ## What it currently does
 
@@ -9,6 +9,7 @@ Leda is an early-stage, terminal-native agentic coding assistant written in Type
 - Validates tool arguments at runtime in a central runner, then executes the selected tool.
 - Repeats the LLM → tool → observation cycle until the model answers or a limit is reached.
 - Provides filesystem tools (`read_file`, `list_files`, `search_files`) and read-only Git tools (`git_status`, `git_diff`, `git_log`, `git_branch`).
+- Provides `edit_file` for one exact replacement in an existing UTF-8 file, after a terminal confirmation.
 - Allows at most 10 model turns and 6 tool calls per request. Tool calls are sequential.
 
 ## How it works
@@ -50,8 +51,9 @@ The orchestrator runs requested tools sequentially and appends a result for ever
 | `git_diff` | Implemented | Shows staged or unstaged changes, optionally for one file. |
 | `git_log` | Implemented | Shows up to 20 recent commits. |
 | `git_branch` | Implemented | Reports the current and local branches. |
+| `edit_file` | Implemented | Replaces one exact text occurrence in an existing file after approval. |
 
-For example, ask “What files have changed?”, “Show the staged diff for `src/cli.ts`,” or “Summarize the last five commits.” Git inspection runs only against the current working directory; it does not modify the repository.
+For example, ask “What files have changed?”, “Show the staged diff for `src/cli.ts`,” or “Replace `oldName` with `newName` in `src/example.ts`.” For an edit, the CLI shows the path and old/new text; type `yes` to apply it. Git inspection does not modify the repository.
 
 ## Roadmap
 
@@ -62,6 +64,7 @@ Checked items exist in the current codebase; unchecked items are plans, not avai
 - [x] `read_file`
 - [x] `list_files`
 - [x] `search_files`
+- [x] `edit_file`
 - [ ] `file_exists`
 - [ ] `write_file`
 - [ ] `move_file`
@@ -88,7 +91,7 @@ Checked items exist in the current codebase; unchecked items are plans, not avai
 - [x] Tool registry
 - [x] Basic file safety checks
 - [x] Model-turn and tool-call limits
-- [ ] Human approval for write actions
+- [x] Human approval for `edit_file`
 - [ ] Explicit planning
 - [ ] Self-correction after test failures
 - [ ] Persistent task state
@@ -134,9 +137,9 @@ npm run build
 
 ## Safety
 
-File tools reject requested paths outside the project and block selected credential-like filenames, including `.env` variants and common key files. Tool inputs are validated with Zod. Leda currently has no write or shell tools.
+File tools reject requested paths outside the project and block selected credential-like filenames, including `.env` variants and common key files. `edit_file` changes existing UTF-8 files only, rejects symbolic links, requires one exact match, and rechecks that the file is unchanged after approval. It cannot create or delete files. No shell execution is available.
 
-These checks are an early boundary, not a sandbox or comprehensive secret scanner. In particular, symlink targets are not resolved before reading. Review a project before allowing its file contents to be sent to the model.
+These checks are an early boundary, not a sandbox or comprehensive secret scanner. The edit checks reduce path and stale-content risks but cannot eliminate races with other processes modifying files at the same time. Review a project before allowing its file contents to be sent to the model.
 
 ## Project status
 

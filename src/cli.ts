@@ -1,8 +1,29 @@
 import OpenAI from "openai";
+import { createInterface } from "node:readline/promises";
 import { runAgent, MAX_TURNS } from "./agent/orchestrator.js";
 import { DEFAULT_MODEL, OpenAIAdapter } from "./model/openai-adapter.js";
 import { callTool } from "./tools/call-tool.js";
 import { getToolDefinitions } from "./tools/get-tool-definitions.js";
+import type { EditProposal } from "./tools/tool.js";
+
+async function requestEditApproval(proposal: EditProposal): Promise<boolean> {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) return false;
+
+  console.log(`\nProposed edit: ${proposal.filePath}`);
+  console.log("--- old text");
+  console.log(proposal.oldText);
+  console.log("+++ new text");
+  console.log(proposal.newText);
+
+  const readline = createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    return (await readline.question("Apply this edit? Type yes to approve: ")).trim() === "yes";
+  } catch {
+    return false;
+  } finally {
+    readline.close();
+  }
+}
 
 async function main() {
   const prompt = process.argv.slice(2).join(" ") || "What does package.json contain?";
@@ -18,7 +39,7 @@ async function main() {
     prompt,
     model,
     tools: getToolDefinitions(),
-    executeTool: callTool,
+    executeTool: (name, args) => callTool(name, args, { approveEdit: requestEditApproval }),
     onEvent(event) {
       if (event.type === "turn") {
         console.log(`\nAgent turn ${event.turn}/${MAX_TURNS}`);

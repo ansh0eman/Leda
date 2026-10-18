@@ -40,7 +40,9 @@ after(async () => {
 
 test("Git tools are present in the model tool definitions", () => {
   const names = getToolDefinitions().map((definition) => definition.name);
-  assert.deepEqual(names.slice(-4), ["git_status", "git_diff", "git_log", "git_branch"]);
+  for (const name of ["git_status", "git_diff", "git_log", "git_branch"]) {
+    assert.ok(names.includes(name), `${name} should be registered`);
+  }
 });
 
 test("git_status separates staged, unstaged, and untracked changes", async () => {

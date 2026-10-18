@@ -2,6 +2,7 @@ import { z } from "zod";
 import { ToolsRegistry } from "./registry.js";
 import type { ToolName } from "./registry.js";
 import type { Tool } from "./tool.js";
+import type { ToolExecutionContext } from "./tool.js";
 
 export type ToolOutcome = {
   status: "ok" | "unknown_tool" | "validation_error" | "execution_error" | "json_error" | "limit_error";
@@ -12,7 +13,11 @@ function isToolName(toolName: string): toolName is ToolName {
   return Object.hasOwn(ToolsRegistry, toolName);
 }
 
-export async function callTool(toolName: string, args: unknown): Promise<ToolOutcome> {
+export async function callTool(
+  toolName: string,
+  args: unknown,
+  context?: ToolExecutionContext,
+): Promise<ToolOutcome> {
   if (!isToolName(toolName)) {
     return { status: "unknown_tool", content: `Tool "${toolName}" was not found.` };
   }
@@ -26,7 +31,7 @@ export async function callTool(toolName: string, args: unknown): Promise<ToolOut
   }
 
   try {
-    return { status: "ok", content: await tool.execute(parsed.data) };
+    return { status: "ok", content: await tool.execute(parsed.data, context) };
   } catch (error) {
     if (error instanceof Error) {
       return { status: "execution_error", content: `Tool "${toolName}" failed: ${error.message}` };
