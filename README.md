@@ -134,6 +134,9 @@ npm run build
 
 ## Safety
 
+See [SECURITY.md](SECURITY.md) for responsible vulnerability reporting, prompt-injection risks, and trust boundaries.
+
+
 File tools reject requested paths outside the project and block selected credential-like filenames, including `.env` variants and common key files. Tool inputs are validated with Zod. Leda currently has no write or shell tools.
 
 These checks are an early boundary, not a sandbox or comprehensive secret scanner. In particular, symlink targets are not resolved before reading. Review a project before allowing its file contents to be sent to the model.
